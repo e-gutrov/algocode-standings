@@ -50,6 +50,7 @@ with open("new_results.json", "w") as fout:
     json.dump(new_results, fp=fout,
               ensure_ascii=False, indent=2)
 
+summary_marks.sort(key=lambda x: -x[1])
 with open("marks.csv", "w") as fout:
     writer = csv.writer(fout)
     for row in summary_marks:

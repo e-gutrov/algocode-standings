@@ -1,5 +1,6 @@
 import json
 import arrow
+import csv
 
 import get_standings
 
@@ -15,10 +16,12 @@ for contest in contests:
     contests[contest]["start"] = arrow.get(contests[contest]["start"], "DD.MM.YYYY")
 
 now = arrow.now()
+summary_marks = []
 
 for name in new_results:
     if name not in old_results:
         old_results[name] = dict()
+    summary_marks.append([name, 0])
     for contest in new_results[name]:
         if contest in old_results[name]:
             old_mark = old_results[name][contest].get("mark", 0)
@@ -29,13 +32,25 @@ for name in new_results:
         new_solved = new_results[name][contest]["solved"]
 
         if (now - contests[contest]["start"]).days > contests[contest].get("duration", 14):
-            mul = 1
+            deadline_coef = 1
         else:
-            mul = 2
+            deadline_coef = 2
         new_results[name][contest]["mark"] = old_mark +\
-            (new_solved - old_solved) * mul / (2 * contests[contest]["tasks"])
+            (new_solved - old_solved) * deadline_coef / (2 * contests[contest]["tasks"])
 
-print(new_results)
+        if contest.find("ТеорКонтест") != -1:
+            contest_coef = 0.4
+        elif contest.find("ПракКонтест") != -1:
+            contest_coef = 0.6
+        else:
+            contest_coef = 1
+        summary_marks[-1][1] += new_results[name][contest]["mark"] * contest_coef
+
 with open("new_results.json", "w") as fout:
     json.dump(new_results, fp=fout,
               ensure_ascii=False, indent=2)
+
+with open("marks.csv", "w") as fout:
+    writer = csv.writer(fout)
+    for row in summary_marks:
+        writer.writerow(row)
